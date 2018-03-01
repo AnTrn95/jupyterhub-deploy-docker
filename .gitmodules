@@ -1,0 +1,3 @@
+[submodule "singleuser/githubcommit"]
+	path = singleuser/githubcommit
+	url = https://github.com/AnTrn95/githubcommit.git
