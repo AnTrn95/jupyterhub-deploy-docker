@@ -14,7 +14,7 @@ RUN cd /tmp && \
     jupyter nbextension enable --py githubcommit
 
 ADD githubcommit/config /home/jovyan/.ssh/config
-ADD config/ssh /home/jovyan/.ssh
+ADD ssh /home/jovyan/.ssh
 ADD bash_profile /home/jovyan/.bash_profile
 RUN chown -R jovyan: /home/jovyan/
 
@@ -28,7 +28,7 @@ ENV GIT_BRANCH_NAME=master
 ENV GIT_USER=AnTrn95
 ENV GIT_USER_UPSTREAM=AnTrn95
 ENV GIT_EMAIL=antr.hat@gmail.com
-ENV GITHUB_ACCESS_TOKEN=c099fb6ed3fc15c5d3c3c98d01577f18b44efe1f
+ENV GITHUB_ACCESS_TOKEN=FIXME
 ENV GIT_REMOTE_URL=git@github.com:AnTrn95/testrepo1.git
 ENV GIT_REMOTE_UPSTREAM=AnTrn95
 
