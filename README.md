@@ -1,4 +1,4 @@
-**[Technical Overview](#technical-overview)** |
+﻿**[Technical Overview](#technical-overview)** |
 **[Prerequisites](#prerequisites)** |
 **[Authenticator setup](#authenticator-setup)** |
 **[Build the JupyterHub Docker image](#build-the-jupyterhub-docker-image)** |
@@ -259,7 +259,83 @@ Here we create a Docker network named `jupyterhub-network`.  Later, we will conf
 docker network create jupyterhub-network
 ```
 
----
+
+----------
+
+
+### Create a Githubcommit submodule
+Create a submodule for git integration. This plugin will allow us to commit and push to a git repository via an additional UI element (i.e. dialog). 
+```bash
+git submodule add -f https://github.com/user/githubcommit.git
+```
+To include the plugin in JupyterHub add the following modules to your Dockerfile (line 4).
+
+**Dockerfile**
+```bash
+gitpython jupyter_contrib_nbextensions
+```
+Enable extensions in your Dockerfile and install the githubcommit extension. Install the ssh client for authentication purposes.
+```bash
+USER root
+RUN apt-get update && \
+    apt-get install openssh-client -y
+ADD githubcommit /tmp/githubcommit
+RUN cd /tmp && \
+    pip install githubcommit/ && \
+    jupyter serverextension enable --py githubcommit && \
+    jupyter nbextension install --py githubcommit && \
+    jupyter nbextension enable --py githubcommit
+```
+Install the ssh agent via your `Dockerfile`. 
+```bash
+ADD githubcommit/config /home/jovyan/.ssh/config
+ADD ssh /home/jovyan/.ssh
+ADD bash_profile /home/jovyan/.bash_profile
+RUN chown -R jovyan: /home/jovyan/
+```
+Create a new file `bash-profile` with the following content to run the `ssh agent`.
+
+**bash-profile**
+```bash
+SSH_ENV="$HOME/.ssh/environment"
+
+function start_agent {
+    echo "Initialising new SSH agent..."
+    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    echo succeeded
+    chmod 600 "${SSH_ENV}"
+    . "${SSH_ENV}" > /dev/null
+    /usr/bin/ssh-add;
+}
+
+# Source SSH settings, if applicable
+
+if [ -f "${SSH_ENV}" ]; then
+    . "${SSH_ENV}" > /dev/null
+    #ps ${SSH_AGENT_PID} doesn't work under cywgin
+    ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
+        start_agent;
+    }
+else
+    start_agent;
+fi
+```
+Initialize all global git variables to execute the git commands: *add, commit, push*
+```bash
+USER jovyan
+RUN git config --global user.email "you@example.com" && \
+    git config --global user.name "Your Name"
+
+ENV GIT_PARENT_DIR=/home/jovyan
+ENV GIT_REPO_NAME=testrepo1
+ENV GIT_BRANCH_NAME=master
+ENV GIT_USER=AnTrn95
+ENV GIT_USER_UPSTREAM=AnTrn95
+ENV GIT_EMAIL=antr.hat@gmail.com
+ENV GITHUB_ACCESS_TOKEN=FIXME
+ENV GIT_REMOTE_URL=git@github.com:AnTrn95/testrepo1.git
+ENV GIT_REMOTE_UPSTREAM=AnTrn95
+```
 
 ## FAQ
 
@@ -357,3 +433,4 @@ docker run --rm \
 ```
 
 The above command creates a tarball in the `/tmp` directory on the host.
+
