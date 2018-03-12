@@ -13,22 +13,11 @@ RUN cd /tmp && \
     jupyter nbextension install --py githubcommit && \
     jupyter nbextension enable --py githubcommit
 
-ADD githubcommit/config /home/jovyan/.ssh/config
-ADD ssh /home/jovyan/.ssh
 ADD bash_profile /home/jovyan/.bash_profile
-RUN chown -R jovyan: /home/jovyan/
+RUN chown -R jovyan: /home/jovyan/ 
 
 USER jovyan
-RUN git config --global user.email "you@example.com" && \
-    git config --global user.name "Your Name"
 
-ENV GIT_PARENT_DIR=/home/jovyan
-ENV GIT_REPO_NAME=testrepo1
-ENV GIT_BRANCH_NAME=master
-ENV GIT_USER=AnTrn95
-ENV GIT_USER_UPSTREAM=AnTrn95
-ENV GIT_EMAIL=antr.hat@gmail.com
-ENV GITHUB_ACCESS_TOKEN=FIXME
-ENV GIT_REMOTE_URL=git@github.com:AnTrn95/testrepo1.git
-ENV GIT_REMOTE_UPSTREAM=AnTrn95
-
+ENV GIT_PARENT_DIR=/home/jovyan/work \
+    GIT_PUBKEY_FILE=/home/jovyan/.ssh/id_rsa.pub \
+    GIT_SETTINGS_FILE=/home/jovyan/.settings.json
