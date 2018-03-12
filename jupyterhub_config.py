@@ -3,7 +3,7 @@
 
 # Configuration file for JupyterHub
 import os
-
+from subprocess import check_call
 c = get_config()
 
 # We rely on environment variables to configure JupyterHub so that we
@@ -35,7 +35,13 @@ notebook_dir = os.environ.get('DOCKER_NOTEBOOK_DIR') or '/home/jovyan/work'
 c.DockerSpawner.notebook_dir = notebook_dir
 # Mount the real user's Docker volume on the host to the notebook user's
 # notebook directory in the container
-c.DockerSpawner.volumes = { 'jupyterhub-user-{username}': notebook_dir }
+c.DockerSpawner.volumes = { '/data/{username}/work': notebook_dir,
+                            '/data/{username}/config/settings.json': '/home/jovyan/.settings.json',
+                            '/data/{username}/config/ssh': '/home/jovyan/.ssh',
+                            '/home/sshuser/jupyterhub-deploy-docker/singleuser/githubcommit/githubcommit/handlers.py' : '/opt/conda/lib/python3.6/site-packages/githubcommit/handlers.py',
+                            '/home/sshuser/jupyterhub-deploy-docker/singleuser/githubcommit/githubcommit/static/main.js': '/usr/local/share/jupyter/nbextensions/githubcommit/main.js',
+                            '/data/{username}/config/gitconfig': '/home/jovyan/.gitconfig'}
+# c.DockerSpawner.volumes = { 'jupyterhub-user-{username}': notebook_dir }
 # volume_driver is no longer a keyword argument to create_container()
 # c.DockerSpawner.extra_create_kwargs.update({ 'volume_driver': 'local' })
 # Remove containers once they are stopped
@@ -82,3 +88,26 @@ with open(os.path.join(pwd, 'userlist')) as f:
         whitelist.add(name)
         if len(parts) > 1 and parts[1] == 'admin':
             admin.add(name)
+
+def create_dir_hook(spawner):
+    username = spawner.user.name # get the username
+    volume_path = os.path.join('/volumes/', username)
+    if not os.path.exists(volume_path):
+        # create a directory with umask 0755 
+        # hub and container user must have the same UID to be writeable
+        # still readable by other users on the system
+        os.mkdir(volume_path, 0o777)
+        # now do whatever you think your user needs
+        # ...
+        pass
+
+# attach the hook function to the spawner
+c.Spawner.pre_spawn_hook = create_dir_hook
+
+def my_script_hook(spawner):
+    username = spawner.user.name # get the username
+    script = os.path.join(os.path.dirname(__file__), 'bootstrap.sh')
+    check_call([script, username])
+
+# attach the hook function to the spawner
+c.Spawner.pre_spawn_hook = my_script_hook
